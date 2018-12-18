@@ -1061,7 +1061,7 @@ function startApp() {
     }
     }
   });
-
+/*
   processor.onNoPrefix('follow', function(json, from) {  // Follow id includes both follow and resteem.
     if(json[0] === 'reblog') {
       if(json[1].author === resteemAccount && state.balances[from] !== undefined && state.balances[from] > 0) {
@@ -1077,7 +1077,7 @@ function startApp() {
       }
     }
   });
-
+*/
   processor.onOperation('comment_options', function(json,from){//grab posts to reward
     try{
       var filter = json.extensions[0][1].beneficiaries
