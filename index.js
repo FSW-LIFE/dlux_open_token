@@ -116,6 +116,7 @@ var state = {
     rr: 0, //reward_relays for relays
     rn: 0, //reward_nodes
     rm: 0, //reward_marketing
+    /*
     'dlux-io': 1000000000,
     shredz7: 100000000,
     disregardfiat: 1290171349,
@@ -163,6 +164,7 @@ var state = {
     stackin: 18253402,
     dera123: 151322740,
     rovill: 137550227
+    */
   },
   pb: {
 
