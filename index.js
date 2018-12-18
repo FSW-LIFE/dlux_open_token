@@ -86,12 +86,12 @@ app.listen(port, () => console.log(`DLUX token API listening on port ${port}!\nA
 
 var stateStoreFile = './state.json';  // You can replace this with the location you want to store the file in, I think this will work best for heroku and for testing.
 const resteemAccount = 'dlux-io';
-var startingBlock = 28665500;
+var startingBlock = 25000000;
 var current, dsteem, wif
 // /\ and \/ are placeholders. They will act as the genesis state if no file is found.
 
-
-const prefix = 'dlux_token_';
+var round = 0
+const prefix = 'dlux_test_';
 const streamMode = args.mode || 'irreversible';
 console.log("Streaming using mode", streamMode);
 const clientURL = ENV.APIURL || 'https://api.steemit.com'
@@ -249,6 +249,8 @@ var state = {
         lastGood: 0,
         escrows: 0,
         transfers: 0,
+        pending: 0,
+        failed: 0,
         report: {
           agreements:{
             'dlux-io': {
@@ -286,6 +288,8 @@ var state = {
         lastGood: 0,
         escrows: 0,
         transfers: 0,
+        pending: 0,
+        failed: 0,
         report: {
           agreements:{
             'dlux-io': {
@@ -323,6 +327,8 @@ var state = {
         lastGood: 0,
         escrows: 0,
         transfers: 0,
+        pending: 0,
+        failed: 0,
         report: {
           agreements:{
             'dlux-io': {
@@ -360,6 +366,8 @@ var state = {
           lastGood: 0,
           escrows: 0,
           transfers: 0,
+          pending: 0,
+          failed: 0,
           report: {
             agreements:{
               'dlux-io': {
@@ -397,6 +405,8 @@ var state = {
             lastGood: 0,
             escrows: 0,
             transfers: 0,
+            pending: 0,
+            failed: 0,
             report: {
               agreements:{
                 'dlux-io': {
@@ -938,6 +948,10 @@ function startApp() {
           yays: 0,
           wins: 0,
           lastGood: 0,
+          escrows: 0,
+          transfers: 0,
+          pending: 0,
+          failed: 0,
           report: {}
         }
       }
@@ -1089,9 +1103,15 @@ function startApp() {
         }
       }
     }
-    if (json.to == 'robotolux' && json.amount.split(' ')[1] == 'STEEM') {
-      const icoEntry = (current - 20000) % 30240
-      const weight = parseInt((Math.sqrt(1 - Math.pow(icoEntry/(30240), 2))/2 + 0.5)*1000000)
+    if (json.to == 'robotolux' && json.amount.split(' ')[1] == 'STEEM' && current > 26450000) {
+
+      if (current < 27417440){
+        const icoEntry = (current - 26450000)
+        const weight = parseInt((Math.sqrt(1 - Math.pow(icoEntry/(967440), 2))/2 + 0.5)*1000000)
+      } else {
+        const icoEntry = (current - 20000) % 30240
+        const weight = parseInt((Math.sqrt(1 - Math.pow(icoEntry/(30240), 2))/2 + 0.5)*1000000)
+      }
       const amount = parseInt(parseFloat(json.amount) * 1000)
       state.ico.push({[json.from]:(weight * amount)})
       console.log(`${json.from} bid in DLUX auction with ${json.amount} with a ${weight} multiple`)
@@ -1203,11 +1223,15 @@ function startApp() {
     if(num % 100 === 50 && processor.isStreaming()) {
       report(num);
     }
-    if((num - 20000) % 30240  === 0) { //time for daily magic
+    if(num > 27417440 && (num - 20000) % 30240  === 0) { //time for daily magic
       dao(num);
+      if (round < 128){
+        ico();round++;
+      }
     }
+    if (num == 27417440){firstAuction()}
     if(num % 100 === 0) {
-      tally(num);
+      if(num >= 29504000){tally(num);}
       const blockState = Buffer.from(JSON.stringify([num, state]))
       plasma.hashBlock = num
       plasma.hashLastIBlock = hashThis(blockState)
@@ -1299,6 +1323,36 @@ function check() { //do this maybe cycle 5, gives 15 secs to be streaming behind
     }
 }
 
+function ico() {
+  var j = 0
+  for (var i = 0;i<state.ico.length;i++){
+    for(var name in state.ico[i]){
+      j += state.ico[i][name]
+    }
+  }
+  for (var i = 0;i<state.ico.length;i++){
+    for(var name in state.ico[i]){
+      state.balances[name] += parseInt((state.ico[i][name]/j)*312500000)
+    }
+  }
+  state.ico = []
+}
+
+function firstAuction(){
+  var j = 0
+  for (var i = 0;i<state.ico.length;i++){
+    for(var name in state.ico[i]){
+      j += state.ico[i][name]
+    }
+  }
+  for (var i = 0;i<state.ico.length;i++){
+    for(var name in state.ico[i]){
+      state.balances[name] += parseInt((state.ico[i][name]/j)*20000000000)
+    }
+  }
+  state.ico = []
+}
+
 function tally(num) {//tally state before save and next report
   var tally = {
     agreements: {
@@ -1385,7 +1439,7 @@ function tally(num) {//tally state before save and next report
   state.balances.ra += mint
 }
 
-function dao() {
+function dao(num) {
   var i,j,b,t=0
   t = state.balances.ra
   for (var nodes in state.runners){ //node rate
@@ -1503,6 +1557,7 @@ function report(num) {
         }
       }
     }
+    /*
     transactor.json(username, key, 'report', {
         agreements: agreements,
         hash: plasma.hashLastIBlock,
@@ -1516,6 +1571,7 @@ function report(num) {
           console.log(`Sent State report and published ${plasma.hashLastIBlock} for ${plasma.hashBlock}`)
         }
     })//sum plasma and post a transaction
+    */
   }
 }
 
