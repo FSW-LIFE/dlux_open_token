@@ -714,7 +714,7 @@ function startApp() {
       contract = state.contracts[json.to][dextx.contract]
       isAgent = state.markets.node[json.agent].report.escrow
       isDAgent = state.markets.node[json.to].report.escrow
-    } catch {
+    } catch(e) {
       return;
     }
     if (isAgent && isDAgent && dextx){//two escrow agents to fascilitate open ended transfer with out estblishing steem/sbd bank //expiration times??
