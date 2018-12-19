@@ -172,6 +172,7 @@ var state = {
   nft: {},
   chrono: [],
   pending: [],
+  ops: [],
   escrow: [],
   bannedNodes: [],
   agents: [],
@@ -584,6 +585,14 @@ function startApp() {
         state.balances[state.contracts[json.to][json.contract].from] += state.contracts[json.to][json.contract].amount
         state.escrow.push(state.contracts[json.to][json.contract].auths[0])
         state.escrow.push(state.contracts[json.to][json.contract].auths[1])
+        if (state.balances[state.contracts[json.to][json.contract].auths[2][1].from] >= state.contracts[json.to][json.contract].auths[2][1].dlux){
+          state.balances[state.contracts[json.to][json.contract].auths[2][1].from] -= state.contracts[json.to][json.contract].auths[2][1].dlux
+        } else {
+          state.contracts[json.to][json.contract].auths[2][1].dlux = state.balances[state.contracts[json.to][json.contract].auths[2][1].from]
+          state.balances[state.contracts[json.to][json.contract].auths[2][1].from] = 0
+          console.log(`${from} chose and escrow agent with an insuffiecient balance`)
+        }
+        state.ops.push(state.contracts[json.to][json.contract].auths[2])
         if (state.contracts[json.to][json.contract].steem) {
           state.escrow.push([state.contracts[json.to][json.contract].auths[0][1][1].to,
             [
@@ -719,6 +728,7 @@ function startApp() {
     }
     if (isAgent && isDAgent && dextx){//two escrow agents to fascilitate open ended transfer with out estblishing steem/sbd bank //expiration times??
       var txid = 'DLUX' + hashThis(from + current)
+      state.balances[json.from] -= dextx.dlux
       var auths = [[json.agent,
         [
           "escrow_approve",
@@ -740,8 +750,16 @@ function startApp() {
             "who": json.to,
             "escrow_id": json.escrow_id,
             "approve": true
+          }
+        ]],
+      ['virtual_escrow',
+        {
+          from: json.to,
+          memo: txid,
+          amount: dextx.steem || dextx.sbd,
+          dlux: dextx.dlux,
         }
-      ]]]
+    ]]
       var reject =[json.to,
         [
           "escrow_release",
@@ -1098,6 +1116,13 @@ function startApp() {
   processor.onOperation('transfer', function(json){//ICO calculate
     if(json.memo.substr(0,5) == 'DLUXQm') {
       var txid = json.memo.split(' ')[0]
+      for(var i = 0; i < state.ops.length;i++){
+        if (state.ops[i][1].memo.split(' ')[0] == txid && state.ops[i][1].to == json.to && json.amount == state.ops[i][1].amount){
+          state.balances[json.from] += state.ops[i][1].dlux
+          state.ops.splice(i,1)
+          break;
+        }
+      }
       for (var i = 0;i < state.escrow.length;i++){
         if(state.escrow[i][1][1].memo.split(' ') == txid && state.escrow[i][0] == json.from){
           state.escrow.splice(i,1)
