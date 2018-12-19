@@ -1083,7 +1083,7 @@ function startApp() {
   processor.onOperation('comment_options', function(json,from){//grab posts to reward
     try{
       var filter = json.extensions[0][1].beneficiaries
-    } catch {
+    } catch(e) {
       return;
     }
     for (var i = 0; i < filter.length; i++) {
